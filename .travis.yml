@@ -26,6 +26,14 @@ jobs:
       arch: ppc64le
       env: PYTHON=python
 
+    - name: Linux | ppc64le | Python 2.7
+      language: python
+      python: 2.7
+      services: docker
+      arch: ppc64le
+      env: PYTHON=python
+
+
     - name: macOS | x86_64 | Python 3.x
       os: osx
       env:

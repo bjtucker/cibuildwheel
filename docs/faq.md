@@ -14,11 +14,15 @@ If your wheel didn't compile, check the list below for some debugging tips.
 
 - MacOS: calling cibuildwheel from a python3 script and getting a `ModuleNotFoundError`? Due to a (fixed) [bug](https://bugs.python.org/issue22490) in CPython, you'll need to [unset the `__PYVENV_LAUNCHER__` variable](https://github.com/joerick/cibuildwheel/issues/133#issuecomment-478288597) before activating a venv.
 
+### Building Python 2.7 / PyPy2 wheels
+
+See the [cibuildwheel verison 1 docs](https://cibuildwheel.readthedocs.io/en/1.x/) for information about building Python 2.7 or PyPy2 wheels. There are lots of tricks and workaround there that are no longer required for Python 3 in cibuildwheel 2.
+
 ### Linux builds on Docker
 
 Linux wheels are built in the [`manylinux` docker images](https://github.com/pypa/manylinux) to provide binary compatible wheels on Linux, according to [PEP 571](https://www.python.org/dev/peps/pep-0571/). Because of this, when building with `cibuildwheel` on Linux, a few things should be taken into account:
 
-- Programs and libraries cannot be installed on the Travis CI Ubuntu host with `apt-get`, but can be installed inside of the Docker image using `yum` or manually. The same goes for environment variables that are potentially needed to customize the wheel building. `cibuildwheel` supports this by providing the `CIBW_ENVIRONMENT` and `CIBW_BEFORE_BUILD` options to setup the build environment inside the running Docker image. See [the options docs](options.md#build-environment) for details on these options.
+- Programs and libraries are not installed on the Travis CI Ubuntu host, but rather should be installed inside of the Docker image (using `yum` for `manylinux2010` or `manylinux2014`, and `apt-get` for `manylinux_2_24`) or manually. The same goes for environment variables that are potentially needed to customize the wheel building. `cibuildwheel` supports this by providing the `CIBW_ENVIRONMENT` and `CIBW_BEFORE_BUILD` options to setup the build environment inside the running Docker image. See [the options docs](options.md#build-environment) for details on these options.
 
 - The project directory is mounted in the running Docker instance as `/project`, the output directory for the wheels as `/output`. In general, this is handled transparently by `cibuildwheel`. For a more finegrained level of control however, the root of the host file system is mounted as `/host`, allowing for example to access shared files, caches, etc. on the host file system.  Note that this is not available on CircleCI due to their Docker policies.
 
@@ -105,6 +109,7 @@ Actions. Once QEMU is set up and registered, you just need to set the
 Linux), and the other architectures are emulated automatically.
 
 > .github/workflows/build.yml
+
 ```yaml
 {% include "../examples/github-with-qemu.yml" %}
 ```
@@ -130,9 +135,11 @@ Hopefully, this is a temporary situation. Once we have widely available Apple Si
 Here's an example GitHub Actions workflow with a job that builds for Apple Silicon:
 
 > .github/workflows/build_macos.yml
+
 ```yml
 {% include "../examples/github-apple-silicon.yml" %}
 ```
+
 
 ### Building packages with optional C extensions
 
@@ -174,7 +181,7 @@ python3 -m twine upload wheelhouse/*.whl
 
 ### 'ImportError: DLL load failed: The specific module could not be found' error on Windows
 
-Visual Studio and MSVC link the compiled binary wheels to the Microsoft Visual C++ Runtime. Normally, these are included with Python, but when compiling with a newer version of Visual Studio, it is possible users will run into problems on systems that do not have these runtime libraries installed. The solution is to ask users to download the corresponding Visual C++ Redistributable from the [Microsoft website](https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads) and install it. Since a Python installation normally includes these VC++ Redistributable files for [the version of the MSVC compiler used to compile Python](https://wiki.python.org/moin/WindowsCompilers), this is typically only a problem when compiling a Python 2.7 C extension with a newer compiler, e.g. to support a modern C++ standard (see [the section on modern C++ standards for Python 2.7](cpp_standards.md#windows-and-python-27) for more details).
+Visual Studio and MSVC link the compiled binary wheels to the Microsoft Visual C++ Runtime. Normally, these are included with Python, but when compiling with a newer version of Visual Studio, it is possible users will run into problems on systems that do not have these runtime libraries installed. The solution is to ask users to download the corresponding Visual C++ Redistributable from the [Microsoft website](https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads) and install it. Since a Python installation normally includes these VC++ Redistributable files for [the version of the MSVC compiler used to compile Python](https://wiki.python.org/moin/WindowsCompilers), this is typically only a problem when compiling a Python C extension with a newer compiler.
 
 Additionally, Visual Studio 2019 started linking to an even newer DLL, `VCRUNTIME140_1.dll`, besides the `VCRUNTIME140.dll` that is included with recent Python versions (starting from Python 3.5; see [here](https://wiki.python.org/moin/WindowsCompilers) for more details on the corresponding Visual Studio & MSVC versions used to compile the different Python versions). To avoid this extra dependency on `VCRUNTIME140_1.dll`, the [`/d2FH4-` flag](https://devblogs.microsoft.com/cppblog/making-cpp-exception-handling-smaller-x64/) can be added to the MSVC invocations (check out [this issue](https://github.com/joerick/cibuildwheel/issues/423) for details and references).
 
@@ -203,7 +210,7 @@ There are two suggested methods for keeping cibuildwheel up to date that instead
 If you use GitHub Actions for builds, you can use cibuildwheel as an action:
 
 ```yaml
-uses: joerick/cibuildwheel@v1.9.0
+uses: joerick/cibuildwheel@v1.11.0
 ```
 
 This is a composite step that just runs cibuildwheel using pipx. You can set command-line options as `with:` parameters, and use `env:` as normal.
@@ -229,7 +236,7 @@ The second option, and the only one that supports other CI systems, is using a `
 
 ```bash
 # requirements-cibw.txt
-cibuildwheel==1.9.0
+cibuildwheel==1.11.0
 ```
 
 Then your install step would have `python -m pip install -r requirements-cibw.txt` in it. Your `dependabot.yml` file could look like this:

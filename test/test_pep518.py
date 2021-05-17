@@ -7,12 +7,8 @@ basic_project = test_projects.new_c_project(
     setup_py_add=textwrap.dedent(
         """
         # Will fail if PEP 518 does work
-        import sys
         import requests
-        if sys.version_info < (3, 6, 0):
-            assert requests.__version__ == "2.22.0", "Requests found but wrong version ({0})".format(requests.__version__)
-        else:
-            assert requests.__version__ == "2.23.0", "Requests found but wrong version ({0})".format(requests.__version__)
+        assert requests.__version__ == "2.23.0", "Requests found but wrong version ({0})".format(requests.__version__)
 
         # Just making sure environment is still set
         import os
@@ -30,8 +26,7 @@ requires = [
     "setuptools >= 42",
     "setuptools_scm[toml]>=4.1.2",
     "wheel",
-    "requests==2.22.0; python_version<'3.6'",
-    "requests==2.23.0; python_version>='3.6'"
+    "requests==2.23.0"
 ]
 
 build-backend = "setuptools.build_meta"

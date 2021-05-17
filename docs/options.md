@@ -4,50 +4,78 @@
 
 ## Setting options
 
-cibuildwheel is configured using environment variables, that can be set using
+cibuildwheel is configured using environment variables that can be set using
 your CI config.
 
 For example, to configure cibuildwheel to run tests, add the following YAML to
 your CI config file:
 
-> .travis.yml ([docs](https://docs.travis-ci.com/user/environment-variables/))
-```yaml
-env:
-  global:
-    - CIBW_TEST_REQUIRES=pytest
-    - CIBW_TEST_COMMAND="pytest {project}/tests"
-```
 
-> appveyor.yml ([docs](https://www.appveyor.com/docs/build-configuration/#environment-variables))
-```yaml
-environment:
-  global:
-    CIBW_TEST_REQUIRES: pytest
-    CIBW_TEST_COMMAND: "pytest {project}\\tests"
-```
+!!! tab "GitHub Actions"
 
-> .circleci/config.yml ([docs](https://circleci.com/docs/2.0/configuration-reference/#environment))
-```yaml
-jobs:
-  job_name:
-    environment:
+    > .github/workflows/*.yml ([docs](https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables)) (can be global, in job, or in step)
+
+    ```yaml
+    env:
       CIBW_TEST_REQUIRES: pytest
       CIBW_TEST_COMMAND: "pytest {project}/tests"
-```
+    ```
 
-> azure-pipelines.yml ([docs](https://docs.microsoft.com/en-us/azure/devops/pipelines/process/variables))
-```yaml
-variables:
-  CIBW_TEST_REQUIRES: pytest
-  CIBW_TEST_COMMAND: "pytest {project}/tests"
-```
+!!! tab "Azure Pipelines"
 
-> .github/workflows/*.yml ([docs](https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables)) (can be global, in job, or in step)
-```yaml
-env:
-  CIBW_TEST_REQUIRES: pytest
-  CIBW_TEST_COMMAND: "pytest {project}/tests"
-```
+    > azure-pipelines.yml ([docs](https://docs.microsoft.com/en-us/azure/devops/pipelines/process/variables))
+
+    ```yaml
+    variables:
+      CIBW_TEST_REQUIRES: pytest
+      CIBW_TEST_COMMAND: "pytest {project}/tests"
+    ```
+
+!!! tab "Travis CI"
+
+    > .travis.yml ([docs](https://docs.travis-ci.com/user/environment-variables/))
+
+    ```yaml
+    env:
+      global:
+        - CIBW_TEST_REQUIRES=pytest
+        - CIBW_TEST_COMMAND="pytest {project}/tests"
+    ```
+
+!!! tab "AppVeyor"
+
+    > appveyor.yml ([docs](https://www.appveyor.com/docs/build-configuration/#environment-variables))
+
+    ```yaml
+    environment:
+      global:
+        CIBW_TEST_REQUIRES: pytest
+        CIBW_TEST_COMMAND: "pytest {project}\\tests"
+    ```
+
+!!! tab "CircleCI"
+
+    > .circleci/config.yml ([docs](https://circleci.com/docs/2.0/configuration-reference/#environment))
+
+    ```yaml
+    jobs:
+      job_name:
+        environment:
+          CIBW_TEST_REQUIRES: pytest
+          CIBW_TEST_COMMAND: "pytest {project}/tests"
+    ```
+
+!!! tab "Gitlab CI"
+
+    > .gitlab-ci.yml ([docs](https://docs.gitlab.com/ee/ci/variables/README.html#create-a-custom-variable-in-gitlab-ciyml))
+
+    ```yaml
+    linux:
+      variables:
+        CIBW_TEST_REQUIRES: pytest
+        CIBW_TEST_COMMAND: "pytest {project}/tests"
+    ```
+
 
 
 ## Build selection
@@ -62,74 +90,79 @@ Default: `auto`
 
 `auto` will auto-detect platform using environment variables, such as `TRAVIS_OS_NAME`/`APPVEYOR`/`CIRCLECI`.
 
-For `linux` you need Docker running, on macOS or Linux. For `macos`, you need a Mac machine, and note that this script is going to automatically install MacPython on your system, so don't run on your development machine. For `windows`, you need to run in Windows, and `cibuildwheel` will install required versions of Python to `C:\cibw\python` using NuGet.
+- For `linux`, you need Docker running, on macOS or Linux.
+- For `macos`, you need a Mac machine. Note that cibuildwheel is going to install MacPython on your system, so you probably don't want to run this on your development machine.
+- For `windows`, you need to run in Windows. cibuildwheel will install required versions of Python to `C:\cibw\python` using NuGet.
 
 This option can also be set using the [command-line option](#command-line) `--platform`.
+
+!!! tip
+    If you have Docker installed, you can locally debug your cibuildwheel Linux config, instead of pushing to CI to test every change. For example:
+
+    ```bash
+    export CIBW_BUILD='cp37-*'
+    export CIBW_TEST_COMMAND='pytest {package}/tests'
+    cibuildwheel --platform linux .
+    ```
 
 
 ### `CIBW_BUILD`, `CIBW_SKIP` {: #build-skip}
 
 > Choose the Python versions to build
 
-Space-separated list of builds to build and skip. Each build has an identifier like `cp27-manylinux_x86_64` or `cp35-macosx_x86_64` - you can list specific ones to build and `cibuildwheel` will only build those, and/or list ones to skip and `cibuildwheel` won't try to build them.
+Space-separated list of builds to build and skip. Each build has an identifier like `cp38-manylinux_x86_64` or `cp37-macosx_x86_64` - you can list specific ones to build and cibuildwheel will only build those, and/or list ones to skip and cibuildwheel won't try to build them.
 
 When both options are specified, both conditions are applied and only builds with a tag that matches `CIBW_BUILD` and does not match `CIBW_SKIP` will be built.
 
-When setting the options, you can use shell-style globbing syntax, as per [`fnmatch`](https://docs.python.org/3/library/fnmatch.html) with the addition of curly bracket syntax `{option1,option2}`, provided by [`bracex`](https://pypi.org/project/bracex/). All the build identifiers supported by cibuildwheel are shown below:
+When setting the options, you can use shell-style globbing syntax, as per [fnmatch](https://docs.python.org/3/library/fnmatch.html) with the addition of curly bracket syntax `{option1,option2}`, provided by [bracex](https://pypi.org/project/bracex/). All the build identifiers supported by cibuildwheel are shown below:
 
 <div class="build-id-table-marker"></div>
 
-|                 | macOS 64bit         | Manylinux x86 64bit    | Manylinux x86 32bit  | Windows 64bit   | Windows 32bit  | Manylinux Armv8 64bit  | Manylinux PPC64LE      | Manylinux s390x      |
-|-----------------|---------------------|------------------------|----------------------|-----------------|----------------|------------------------|------------------------|----------------------|
-| Python 2.7      | cp27-macosx_x86_64  | cp27-manylinux_x86_64  | cp27-manylinux_i686  | cp27-win_amd64  | cp27-win32     |                        |                        |                      |
-| Python 3.5      | cp35-macosx_x86_64  | cp35-manylinux_x86_64  | cp35-manylinux_i686  | cp35-win_amd64  | cp35-win32     | cp35-manylinux_aarch64 | cp35-manylinux_ppc64le | cp35-manylinux_s390x |
-| Python 3.6      | cp36-macosx_x86_64  | cp36-manylinux_x86_64  | cp36-manylinux_i686  | cp36-win_amd64  | cp36-win32     | cp36-manylinux_aarch64 | cp36-manylinux_ppc64le | cp36-manylinux_s390x |
-| Python 3.7      | cp37-macosx_x86_64  | cp37-manylinux_x86_64  | cp37-manylinux_i686  | cp37-win_amd64  | cp37-win32     | cp37-manylinux_aarch64 | cp37-manylinux_ppc64le | cp37-manylinux_s390x |
-| Python 3.8      | cp38-macosx_x86_64  | cp38-manylinux_x86_64  | cp38-manylinux_i686  | cp38-win_amd64  | cp38-win32     | cp38-manylinux_aarch64 | cp38-manylinux_ppc64le | cp38-manylinux_s390x |
-| Python 3.9      | cp39-macosx_x86_64  | cp39-manylinux_x86_64  | cp39-manylinux_i686  | cp39-win_amd64  | cp39-win32     | cp39-manylinux_aarch64 | cp39-manylinux_ppc64le | cp39-manylinux_s390x |
-| PyPy 2.7 v7.3.3 | pp27-macosx_x86_64  | pp27-manylinux_x86_64  |                      |                 | pp27-win32     |                        |                        |                      |
-| PyPy 3.6 v7.3.3 | pp36-macosx_x86_64  | pp36-manylinux_x86_64  |                      |                 | pp36-win32     |                        |                        |                      |
-| PyPy 3.7 (beta) v7.3.3 | pp37-macosx_x86_64  | pp37-manylinux_x86_64  |               |                 | pp37-win32     |                        |                        |                      |
+|              | macOS                                                               | Windows                       | Manylinux Intel                               | Manylinux Other                                                            |
+|--------------|---------------------------------------------------------------------|-------------------------------|-----------------------------------------------|----------------------------------------------------------------------------|
+| Python 3.6   | cp36-macosx_x86_64                                                  | cp36-win_amd64<br/>cp36-win32 | cp36-manylinux_x86_64<br/>cp36-manylinux_i686 | cp36-manylinux_aarch64<br/>cp36-manylinux_ppc64le<br/>cp36-manylinux_s390x |
+| Python 3.7   | cp37-macosx_x86_64                                                  | cp37-win_amd64<br/>cp37-win32 | cp37-manylinux_x86_64<br/>cp37-manylinux_i686 | cp37-manylinux_aarch64<br/>cp37-manylinux_ppc64le<br/>cp37-manylinux_s390x |
+| Python 3.8   | cp38-macosx_x86_64                                                  | cp38-win_amd64<br/>cp38-win32 | cp38-manylinux_x86_64<br/>cp38-manylinux_i686 | cp38-manylinux_aarch64<br/>cp38-manylinux_ppc64le<br/>cp38-manylinux_s390x |
+| Python 3.9   | cp39-macosx_x86_64<br/>cp39-macosx_universal2<br/>cp39-macosx_arm64 | cp39-win_amd64<br/>cp39-win32 | cp39-manylinux_x86_64<br/>cp39-manylinux_i686 | cp39-manylinux_aarch64<br/>cp39-manylinux_ppc64le<br/>cp39-manylinux_s390x |
+| PyPy3.7 v7.3 | pp37-macosx_x86_64                                                  |                    pp37-win32 | pp37-manylinux_x86_64                         |                                                                            |
 
 
-The list of supported and currently selected build identifiers can also be retrieved by passing the `--print-build-identifiers` flag to `cibuildwheel`.
+The list of supported and currently selected build identifiers can also be retrieved by passing the `--print-build-identifiers` flag to cibuildwheel.
 The format is `python_tag-platform_tag`, with tags similar to those in [PEP 425](https://www.python.org/dev/peps/pep-0425/#details).
 
-For CPython, the minimally supported macOS version is 10.9; for PyPy 2.7 and PyPy 3.6/3.7, respectively macOS 10.7 and 10.13 or higher is required.
+For CPython, the minimally supported macOS version is 10.9; for PyPy 3.7, macOS 10.13 or higher is required.
+
+See the [cibuildwheel 1 documentation](https://cibuildwheel.readthedocs.io/en/1.x/) for past end of life versions of Python, and PyPy2.7.
 
 #### Examples
 
 ```yaml
-# Only build on Python 3.6
+# Only build on CPython 3.6
 CIBW_BUILD: cp36-*
 
-# Skip building on Python 2.7 on the Mac
-CIBW_SKIP: cp27-macosx_x86_64
+# Skip building on CPython 3.6 on the Mac
+CIBW_SKIP: cp36-macosx_x86_64
 
-# Skip building on Python 3.8 on the Mac
+# Skip building on CPython 3.8 on the Mac
 CIBW_SKIP: cp38-macosx_x86_64
 
-# Skip building on Python 2.7 on all platforms
-CIBW_SKIP: cp27-*
+# Skip building on CPython 3.6 on all platforms
+CIBW_SKIP: cp36-*
 
-# Skip Python 2.7 on Windows
-CIBW_SKIP: cp27-win*
+# Skip CPython 3.6 on Windows
+CIBW_SKIP: cp36-win*
 
-# Skip Python 2.7 on 32-bit Windows
-CIBW_SKIP: cp27-win32
+# Skip CPython 3.6 on 32-bit Windows
+CIBW_SKIP: cp36-win32
 
-# Skip Python 2.7 and Python 3.5
-CIBW_SKIP: cp27-* cp35-*
+# Skip CPython 3.6 and CPython 3.7
+CIBW_SKIP: cp36-* cp37-*
 
 # Skip Python 3.6 on Linux
 CIBW_SKIP: cp36-manylinux*
 
-# Only build on Python 3 (ready for 3.10 when it comes) and skip 32-bit builds
-CIBW_BUILD: {cp,pp}3*-*
+# Skip 32-bit builds
 CIBW_SKIP: "*-win32 *-manylinux_i686"
-
-# Only build PyPy and CPython 3
-CIBW_BUILD: pp* cp3*-*
 
 # Disable building PyPy wheels on all platforms
 CIBW_SKIP: pp*
@@ -248,8 +281,8 @@ the package is compatible with all versions of Python that it can build.
 
     Currently, setuptools has not yet added support for reading this value from
     pyproject.toml yet, and so does not copy it to Requires-Python in the wheel
-    metadata. This mechanism is used by `pip` to scan through older versions of
-    your package until it finds a release compatible with the curernt version
+    metadata. This mechanism is used by pip to scan through older versions of
+    your package until it finds a release compatible with the current version
     of Python compatible when installing, so it is an important value to set if
     you plan to drop support for a version of Python in the future.
 
@@ -301,7 +334,7 @@ CIBW_ENVIRONMENT: "BUILD_TIME=$(date) SAMPLE_TEXT=\"sample text\""
 ```
 
 !!! note
-    `cibuildwheel` always defines the environment variable `CIBUILDWHEEL=1`. This can be useful for [building wheels with optional extensions](faq.md#building-packages-with-optional-c-extensions).
+    cibuildwheel always defines the environment variable `CIBUILDWHEEL=1`. This can be useful for [building wheels with optional extensions](faq.md#building-packages-with-optional-c-extensions).
 
 ### `CIBW_BEFORE_ALL` {: #before-all}
 > Execute a shell command on the build system before any wheels are built.
@@ -310,7 +343,7 @@ Shell command to prepare a common part of the project (e.g. build or install lib
 
 This option is very useful for the Linux build, where builds take place in isolated Docker containers managed by cibuildwheel. This command will run inside the container before the wheel builds start. Note, if you're building both x86_64 and i686 wheels (the default), your build uses two different Docker images. In that case, this command will execute twice - once per build container.
 
-The placeholder `{package}` can be used here; it will be replaced by the path to the package being built by `cibuildwheel`.
+The placeholder `{package}` can be used here; it will be replaced by the path to the package being built by cibuildwheel.
 
 On Windows and macOS, the version of Python available inside `CIBW_BEFORE_ALL` is whatever is available on the host machine. On Linux, a modern Python version is available on PATH.
 
@@ -326,6 +359,11 @@ CIBW_BEFORE_ALL: make -C third_party_lib
 CIBW_BEFORE_ALL_LINUX: yum install -y libffi-dev
 ```
 
+Note that manylinux2_24 builds occur inside a Debian9 docker, where
+manylinux2010 and manylinux2014 builds occur inside a CentOS one. So for
+`manylinux2_24` the `CIBW_BEFORE_ALL_LINUX` command must use `apt-get -y`
+instead.
+
 ### `CIBW_BEFORE_BUILD` {: #before-build}
 > Execute a shell command preparing each wheel's build
 
@@ -333,7 +371,7 @@ A shell command to run before building the wheel. This option allows you to run 
 
 If dependencies are required to build your wheel (for example if you include a header from a Python module), instead of using this command, we recommend adding requirements to a pyproject.toml file. This is reproducible, and users who do not get your wheels (such as Alpine or ClearLinux users) will still benefit.
 
-The active Python binary can be accessed using `python`, and pip with `pip`; `cibuildwheel` makes sure the right version of Python and pip will be executed. The placeholder `{package}` can be used here; it will be replaced by the path to the package being built by `cibuildwheel`.
+The active Python binary can be accessed using `python`, and pip with `pip`; cibuildwheel makes sure the right version of Python and pip will be executed. The placeholder `{package}` can be used here; it will be replaced by the path to the package being built by cibuildwheel.
 
 The command is run in a shell, so you can write things like `cmd1 && cmd2`.
 
@@ -393,7 +431,7 @@ Default:
 A shell command to repair a built wheel by copying external library dependencies into the wheel tree and relinking them.
 The command is run on each built wheel (except for pure Python ones) before testing it.
 
-The following placeholders must be used inside the command and will be replaced by `cibuildwheel`:
+The following placeholders must be used inside the command and will be replaced by cibuildwheel:
 
 - `{wheel}` for the absolute path to the built wheel
 - `{dest_dir}` for the absolute path of the directory where to create the repaired wheel
@@ -404,30 +442,52 @@ The command is run in a shell, so you can run multiple commands like `cmd1 && cm
 Platform-specific variants also available:<br/>
 `CIBW_REPAIR_WHEEL_COMMAND_MACOS` | `CIBW_REPAIR_WHEEL_COMMAND_WINDOWS` | `CIBW_REPAIR_WHEEL_COMMAND_LINUX`
 
+!!! tip
+    cibuildwheel doesn't yet ship a default repair command for Windows.
+
+    **If that's an issue for you, check out [delvewheel]** - a new package that aims to do the same as auditwheel or delocate for Windows.
+
+    Because delvewheel is still relatively early-stage, cibuildwheel does not yet run it by default. However, we'd recommend giving it a try! See the examples below for usage.
+
+    [Delvewheel]: https://github.com/adang1345/delvewheel
+
 #### Examples
 
 ```yaml
+# use delvewheel on windows (only works on Python 3.6+)
+CIBW_BEFORE_BUILD_WINDOWS: "pip install delvewheel"
+CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
+
 # don't repair macOS wheels
 CIBW_REPAIR_WHEEL_COMMAND_MACOS: ""
 
 # pass the `--lib-sdir .` flag to auditwheel on Linux
 CIBW_REPAIR_WHEEL_COMMAND_LINUX: "auditwheel repair --lib-sdir . -w {dest_dir} {wheel}"
+
 ```
 
 
-### `CIBW_MANYLINUX_X86_64_IMAGE`, `CIBW_MANYLINUX_I686_IMAGE`, `CIBW_MANYLINUX_PYPY_X86_64_IMAGE`, `CIBW_MANYLINUX_AARCH64_IMAGE`, `CIBW_MANYLINUX_PPC64LE_IMAGE`, `CIBW_MANYLINUX_S390X_IMAGE` {: #manylinux-image}
-> Specify alternative manylinux docker images
+### CIBW_MANYLINUX_*_IMAGE {: #manylinux-image}
+> Specify alternative manylinux Docker images
 
-An alternative Docker image to be used for building [`manylinux`](https://github.com/pypa/manylinux) wheels. `cibuildwheel` will then pull these instead of the default images, [`quay.io/pypa/manylinux2010_x86_64`](https://quay.io/pypa/manylinux2010_x86_64), [`quay.io/pypa/manylinux2010_i686`](https://quay.io/pypa/manylinux2010_i686), [`pypywheels/manylinux2010-pypy_x86_64`](https://hub.docker.com/r/pypywheels/manylinux2010-pypy_x86_64), [`quay.io/pypa/manylinux2014_aarch64`](https://quay.io/pypa/manylinux2014_aarch64), [`quay.io/pypa/manylinux2014_ppc64le`](https://quay.io/pypa/manylinux2014_ppc64le), and [`quay.io/pypa/manylinux2014_s390x`](https://quay.io/pypa/manylinux2010_s390x).
+The available options are:
 
-The value of this option can either be set to `manylinux1`, `manylinux2010` or `manylinux2014` to use a pinned version of the [official `manylinux` images](https://github.com/pypa/manylinux) and [PyPy `manylinux` images](https://github.com/pypy/manylinux). Alternatively, set these options to any other valid Docker image name. Note that for PyPy, only the official `manylinux2010` image is currently available. For architectures other
-than x86 (x86\_64 and i686) manylinux2014 must be used because this is the first version of the manylinux specification that supports additional architectures.
+- `CIBW_MANYLINUX_X86_64_IMAGE`
+- `CIBW_MANYLINUX_I686_IMAGE`
+- `CIBW_MANYLINUX_PYPY_X86_64_IMAGE`
+- `CIBW_MANYLINUX_AARCH64_IMAGE`
+- `CIBW_MANYLINUX_PPC64LE_IMAGE`
+- `CIBW_MANYLINUX_S390X_IMAGE`
 
-Beware to specify a valid Docker image that can be used in the same way as the official, default Docker images: all necessary Python and pip versions need to be present in `/opt/python/`, and the `auditwheel` tool needs to be present for `cibuildwheel` to work. Apart from that, the architecture and relevant shared system libraries need to be manylinux1-, manylinux2010- or manylinux2014-compatible in order to produce valid `manylinux1`/`manylinux2010`/`manylinux2014` wheels (see [pypa/manylinux on GitHub](https://github.com/pypa/manylinux), [PEP 513](https://www.python.org/dev/peps/pep-0513/), [PEP 571](https://www.python.org/dev/peps/pep-0571/) and [PEP 599](https://www.python.org/dev/peps/pep-0599/) for more details).
+Set an alternative Docker image to be used for building [manylinux](https://github.com/pypa/manylinux) wheels. cibuildwheel will then pull these instead of the default images, [`quay.io/pypa/manylinux2010_x86_64`](https://quay.io/pypa/manylinux2010_x86_64), [`quay.io/pypa/manylinux2010_i686`](https://quay.io/pypa/manylinux2010_i686), [`pypywheels/manylinux2010-pypy_x86_64`](https://hub.docker.com/r/pypywheels/manylinux2010-pypy_x86_64), [`quay.io/pypa/manylinux2014_aarch64`](https://quay.io/pypa/manylinux2014_aarch64), [`quay.io/pypa/manylinux2014_ppc64le`](https://quay.io/pypa/manylinux2014_ppc64le), and [`quay.io/pypa/manylinux2014_s390x`](https://quay.io/pypa/manylinux2010_s390x).
 
-Note that `auditwheel` detects the version of the `manylinux` standard in the Docker image through the `AUDITWHEEL_PLAT` environment variable, as `cibuildwheel` has no way of detecting the correct `--plat` command line argument to pass to `auditwheel` for a custom image. If a Docker image does not correctly set this `AUDITWHEEL_PLAT` environment variable, the `CIBW_ENVIRONMENT` option can be used to do so (e.g., `CIBW_ENVIRONMENT='AUDITWHEEL_PLAT="manylinux2010_$(uname -m)"'`).
+The value of this option can either be set to `manylinux1`, `manylinux2010`, `manylinux2014` or `manylinux_2_24` to use a pinned version of the [official manylinux images](https://github.com/pypa/manylinux) and [PyPy manylinux images](https://github.com/pypy/manylinux). Alternatively, set these options to any other valid Docker image name. For PyPy, only the official `manylinux2010` image is currently available. For architectures other
+than x86 (x86\_64 and i686) `manylinux2014` or `manylinux_2_24` must be used, because the first version of the manylinux specification that supports additional architectures is `manylinux2014`.
 
-Note that `manylinux2014` doesn't support builds with Python 2.7 - when building with `manylinux2014`, skip Python 2.7 using `CIBW_SKIP` (see example below).
+
+If setting a custom Docker image, you'll need to make sure it can be used in the same way as the official, default Docker images: all necessary Python and pip versions need to be present in `/opt/python/`, and the auditwheel tool needs to be present for cibuildwheel to work. Apart from that, the architecture and relevant shared system libraries need to be compatible to the relevant standard to produce valid manylinux1/manylinux2010/manylinux2014/manylinux_2_24 wheels (see [pypa/manylinux on GitHub](https://github.com/pypa/manylinux), [PEP 513](https://www.python.org/dev/peps/pep-0513/), [PEP 571](https://www.python.org/dev/peps/pep-0571/), [PEP 599](https://www.python.org/dev/peps/pep-0599/) and [PEP 600](https://www.python.org/dev/peps/pep-0600/) for more details).
+
+Auditwheel detects the version of the manylinux standard in the Docker image through the `AUDITWHEEL_PLAT` environment variable, as cibuildwheel has no way of detecting the correct `--plat` command line argument to pass to auditwheel for a custom image. If a Docker image does not correctly set this `AUDITWHEEL_PLAT` environment variable, the `CIBW_ENVIRONMENT` option can be used to do so (e.g., `CIBW_ENVIRONMENT='AUDITWHEEL_PLAT="manylinux2010_$(uname -m)"'`).
 
 #### Examples
 
@@ -478,7 +538,7 @@ here and it will be used instead.
     If you need different dependencies for each python version, provide them
     in the same folder with a `-pythonXY` suffix. e.g. if your
     `CIBW_DEPENDENCY_VERSIONS=./constraints.txt`, cibuildwheel will use
-    `./constraints-python27.txt` on Python 2.7, or fallback to
+    `./constraints-python37.txt` on Python 3.7, or fallback to
     `./constraints.txt` if that's not found.
 
 Platform-specific variants also available:<br/>
@@ -511,8 +571,8 @@ CIBW_DEPENDENCY_VERSIONS: ./constraints.txt
 
 Shell command to run tests after the build. The wheel will be installed
 automatically and available for import from the tests. To ensure the wheel is
-imported by your tests (instead of your source copy), tests are run from a
-different directory. Use the placeholders `{project}` and `{package}` when
+imported by your tests (instead of your source copy), **tests are not run from
+your project directory**. Use the placeholders `{project}` and `{package}` when
 specifying paths in your project. If this variable is not set, your wheel will
 not be installed after building.
 
@@ -543,10 +603,10 @@ CIBW_TEST_COMMAND: "echo Wheel installed"
 ### `CIBW_BEFORE_TEST` {: #before-test}
 > Execute a shell command before testing each wheel
 
-A shell command to run in **each** test virtual environment, before your wheel is installed and tested. This is useful if you need to install a non pip package, change values of environment variables
-or perform multi step pip installation (e.g. installing `scikit-build` or `cython` before install test package)
+A shell command to run in **each** test virtual environment, before your wheel is installed and tested. This is useful if you need to install a non-pip package, invoke pip with different environment variables,
+or perform a multi-step pip installation (e.g. installing scikit-build or Cython before installing test package).
 
-The active Python binary can be accessed using `python`, and pip with `pip`; `cibuildwheel` makes sure the right version of Python and pip will be executed. The placeholder `{package}` can be used here; it will be replaced by the path to the package being built by `cibuildwheel`.
+The active Python binary can be accessed using `python`, and pip with `pip`; cibuildwheel makes sure the right version of Python and pip will be executed. The placeholder `{package}` can be used here; it will be replaced by the path to the package being built by cibuildwheel.
 
 The command is run in a shell, so you can write things like `cmd1 && cmd2`.
 
@@ -611,7 +671,7 @@ CIBW_TEST_EXTRAS: test,qt
 ### `CIBW_TEST_SKIP` {: #test-skip}
 > Skip running tests on some builds
 
-This will skip testing on any identifiers that match the given skip patterns (see [`CIBW_SKIP`](#build-skip)). This can be used to mask out tests for wheels that have missing dependencies upstream that are slow or hard to build, or to mask up slow tests on emulated architectures.
+This will skip testing on any identifiers that match the given skip patterns (see [`CIBW_SKIP`](#build-skip)). This can be used to mask out tests for wheels that have missing dependencies upstream that are slow or hard to build, or to skip slow tests on emulated architectures.
 
 With macOS `universal2` wheels, you can also skip the the individual archs inside the wheel using an `:arch` suffix. For example, `cp39-macosx_universal2:x86_64` or `cp39-macosx_universal2:arm64`.
 
@@ -690,12 +750,13 @@ optional arguments:
 <style>
   .options-toc {
     display: grid;
-    grid-auto-columns: fit-content(20%) 1fr;
+    grid-template-columns: fit-content(20%) 1fr;
     grid-gap: 16px 32px;
     gap: 16px 32px;
     font-size: 90%;
     margin-bottom: 28px;
     margin-top: 28px;
+    overflow-x: auto;
   }
   .options-toc .header {
     grid-column: 1 / 3;
@@ -721,7 +782,7 @@ optional arguments:
 
     $('.rst-content h3')
       .filter(function (i, el) {
-        return !!$(el).text().match(/(^([A-Z0-9, _]| and )+)¶$/);
+        return !!$(el).text().match(/(^([A-Z0-9, _*]| and )+)¶$/);
       })
       .each(function (i, el) {
         var optionName = $(el).text().replace('¶', '');
